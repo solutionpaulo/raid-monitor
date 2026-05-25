@@ -14,6 +14,8 @@ Aplicação web para monitoramento periódico do status de volumes em Software R
 - **Reconhecimento de alertas** com contador de pendentes
 - **Modal de reparo** para reconstrução de volumes degradados
 - **Notificações no navegador** (Web Notification API)
+- **Autenticação Basic Auth** opcional para proteger o dashboard
+- **Segurança** — headers CSP, X-Frame-Options, X-Content-Type-Options
 - **Modo demo** para testes sem RAID real
 
 ## Stack
@@ -74,6 +76,8 @@ npm run install-service
 | `ALERT_EMAIL_FROM` | — | Remetente do e-mail |
 | `ALERT_EMAIL_TO` | — | Destinatário do e-mail |
 | `WEBHOOK_URL` | — | URL do webhook (Teams/Slack/Discord) |
+| `AUTH_USERNAME` | — | Usuário para autenticação Basic Auth (vazio = sem auth) |
+| `AUTH_PASSWORD` | — | Senha para autenticação Basic Auth |
 
 ## Estrutura do Projeto
 
@@ -91,7 +95,9 @@ raid-monitor/
 │       └── notifications.js  # Toast + Web Notification API
 ├── src/
 │   ├── config.js             # Leitura do .env
+│   ├── auth.js               # Middleware de autenticação Basic Auth
 │   ├── logger.js             # Logger estruturado com níveis
+│   ├── sse.js                # Gerenciamento de clientes SSE
 │   ├── database/
 │   │   ├── init.js           # Conexão SQLite + schema
 │   │   └── queries.js        # CRUD com promisify
@@ -106,6 +112,9 @@ raid-monitor/
 │   └── routes/
 │       ├── api.js            # REST API (status, history, alerts, repair)
 │       └── sse.js            # Server-Sent Events endpoint
+├── tests/
+│   ├── parser.test.js        # Testes unitários do parser
+│   └── api.test.js           # Testes de integração da API
 └── scripts/
     └── install-service.js    # Instalação como serviço Windows
 ```
@@ -132,13 +141,15 @@ raid-monitor/
 ```bash
 npm start              # Iniciar o monitor
 npm run dev            # Iniciar com --watch (hot reload)
+npm test               # Executar testes
+npm run test:watch     # Executar testes em modo watch
 npm run install-service   # Instalar como serviço Windows
 npm run uninstall-service # Remover serviço Windows
 ```
 
 ## ⚠️ Observações
 
-- **Segurança**: O dashboard escuta em `127.0.0.1` por padrão. Para acesso remoto, configure `HOST=0.0.0.0` e libere a porta no firewall.
+- **Segurança**: O dashboard escuta em `127.0.0.1` por padrão. Para acesso remoto, configure `HOST=0.0.0.0` e libere a porta no firewall. Para proteger o acesso, defina `AUTH_USERNAME` e `AUTH_PASSWORD` no `.env` para ativar a autenticação Basic Auth.
 - **Discos Dinâmicos**: Focado em RAID via Dynamic Disks (Mirror, RAID-5). Para Storage Spaces, os comandos PowerShell seriam diferentes.
 - **PowerShell**: Detecta automaticamente `pwsh.exe` (PowerShell 7) com fallback para `powershell.exe`.
 - **Logs**: O logger inclui timestamps ISO e níveis. Configure `LOG_LEVEL=debug` para mais detalhes.

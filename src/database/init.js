@@ -9,7 +9,7 @@ let db = null;
  */
 function initDatabase() {
   return new Promise((resolve, reject) => {
-    const dbPath = path.join(__dirname, '..', '..', 'raid-monitor.db');
+    const dbPath = process.env.TEST_DB_PATH || path.join(__dirname, '..', '..', 'raid-monitor.db');
     
     db = new sqlite3.Database(dbPath, (err) => {
       if (err) {

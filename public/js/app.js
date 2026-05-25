@@ -212,10 +212,13 @@ const App = {
 
   populateDiskSelect() {
     const select = document.getElementById('select-disk');
-    select.innerHTML = '';
+    select.textContent = '';
 
     if (this.availableDisks.length === 0) {
-      select.innerHTML = '<option value="">Nenhum disco disponível detectado</option>';
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Nenhum disco disponível detectado';
+      select.appendChild(opt);
       document.getElementById('btn-start-repair').disabled = true;
       return;
     }
@@ -223,7 +226,7 @@ const App = {
     this.availableDisks.forEach(disk => {
       const option = document.createElement('option');
       option.value = disk.number;
-      option.textContent = `Disco ${disk.number} - ${disk.size} (${disk.status})`;
+      option.textContent = 'Disco ' + disk.number + ' - ' + disk.size + ' (' + disk.status + ')';
       select.appendChild(option);
     });
   },
@@ -323,97 +326,181 @@ const App = {
     const allVolumes = volumes;
     document.getElementById('volumes-count').textContent = raidVolumes.length;
 
+    grid.textContent = '';
     if (allVolumes.length === 0) {
-      grid.innerHTML = '<div class="empty-state"><p>Nenhum volume detectado</p></div>';
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      const p = document.createElement('p');
+      p.textContent = 'Nenhum volume detectado';
+      empty.appendChild(p);
+      grid.appendChild(empty);
       return;
     }
 
-    // Show RAID volumes first, then simple volumes
     const sorted = [...raidVolumes, ...volumes.filter((v) => !v.isRaid)];
 
-    grid.innerHTML = sorted.map((v) => {
+    for (const v of sorted) {
       const statusLower = v.status.toLowerCase();
       const statusClass = v.isHealthy ? 'healthy' : statusLower.includes('rebuild') || statusLower.includes('sync') ? 'rebuild' : statusLower.includes('fail') ? 'failed' : 'degraded';
-      const raidBadge = v.isRaid ? `<span class="volume-status-badge ${statusClass}">${v.status}</span>` : `<span class="volume-status-badge" style="background:rgba(255,255,255,0.04);color:var(--text-muted)">${v.status}</span>`;
-      
       const canRepair = v.isRaid && !v.isHealthy && (statusClass === 'degraded' || statusClass === 'failed');
 
-      return `
-        <div class="volume-card ${v.isRaid ? statusClass : ''}">
-          <div class="volume-header">
-            <div class="volume-letter">${v.letter || '?'}</div>
-            ${raidBadge}
-          </div>
-          <dl class="volume-info">
-            <dt>Label</dt><dd>${v.label || '—'}</dd>
-            <dt>Tipo</dt><dd>${v.type}${v.isRaid ? ' ⚡' : ''}</dd>
-            <dt>Sistema</dt><dd>${v.filesystem || '—'}</dd>
-            <dt>Tamanho</dt><dd>${v.size || '—'}</dd>
-            ${v.info ? `<dt>Info</dt><dd>${v.info}</dd>` : ''}
-          </dl>
-          ${canRepair ? `
-            <button class="btn-repair" data-vol-number="${v.number}" title="Reparar Volume">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-            </button>
-          ` : ''}
-        </div>
-      `;
-    }).join('');
+      const card = document.createElement('div');
+      card.className = `volume-card ${v.isRaid ? statusClass : ''}`;
+
+      const header = document.createElement('div');
+      header.className = 'volume-header';
+
+      const letter = document.createElement('div');
+      letter.className = 'volume-letter';
+      letter.textContent = v.letter || '?';
+      header.appendChild(letter);
+
+      const badge = document.createElement('span');
+      badge.className = 'volume-status-badge';
+      if (v.isRaid) {
+        badge.classList.add(statusClass);
+      } else {
+        badge.style.background = 'rgba(255,255,255,0.04)';
+        badge.style.color = 'var(--text-muted)';
+      }
+      badge.textContent = v.status;
+      header.appendChild(badge);
+      card.appendChild(header);
+
+      const info = document.createElement('dl');
+      info.className = 'volume-info';
+
+      function addRow(dtText, ddText) {
+        const dt = document.createElement('dt');
+        dt.textContent = dtText;
+        info.appendChild(dt);
+        const dd = document.createElement('dd');
+        dd.textContent = ddText;
+        info.appendChild(dd);
+      }
+
+      addRow('Label', v.label || '—');
+      addRow('Tipo', v.type + (v.isRaid ? ' ⚡' : ''));
+      addRow('Sistema', v.filesystem || '—');
+      addRow('Tamanho', v.size || '—');
+      if (v.info) addRow('Info', v.info);
+
+      card.appendChild(info);
+
+      if (canRepair) {
+        const btn = document.createElement('button');
+        btn.className = 'btn-repair';
+        btn.dataset.volNumber = String(v.number);
+        btn.title = 'Reparar Volume';
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>';
+        card.appendChild(btn);
+      }
+
+      grid.appendChild(card);
+    }
   },
 
   renderDisks(drives) {
     const grid = document.getElementById('disks-grid');
     document.getElementById('disks-count').textContent = drives.length;
 
+    grid.textContent = '';
     if (drives.length === 0) {
-      grid.innerHTML = '<div class="empty-state"><p>Aguardando dados...</p></div>';
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      const p = document.createElement('p');
+      p.textContent = 'Aguardando dados...';
+      empty.appendChild(p);
+      grid.appendChild(empty);
       return;
     }
 
-    grid.innerHTML = drives.map((d) => {
+    for (const d of drives) {
       const statusClass = (d.Status || '').toLowerCase() === 'ok' ? 'ok' : 'warn';
       const mediaIcon = (d.MediaType || '').toLowerCase().includes('ssd') || (d.Model || '').toLowerCase().includes('ssd') ? '⚡' : '💿';
 
-      return `
-        <div class="disk-card">
-          <div class="disk-model" title="${d.Model || ''}">${mediaIcon} ${d.Model || 'Unknown'}</div>
-          <div class="disk-details">
-            <span class="disk-tag ${statusClass}">${d.Status || '?'}</span>
-            <span class="disk-tag">${d.SizeGB ? d.SizeGB + ' GB' : '?'}</span>
-            <span class="disk-tag">${d.InterfaceType || '?'}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
+      const card = document.createElement('div');
+      card.className = 'disk-card';
+
+      const model = document.createElement('div');
+      model.className = 'disk-model';
+      model.title = d.Model || '';
+      model.textContent = mediaIcon + ' ' + (d.Model || 'Unknown');
+      card.appendChild(model);
+
+      const details = document.createElement('div');
+      details.className = 'disk-details';
+
+      function addTag(text, extraClass) {
+        const tag = document.createElement('span');
+        tag.className = 'disk-tag' + (extraClass ? ' ' + extraClass : '');
+        tag.textContent = text;
+        details.appendChild(tag);
+      }
+
+      addTag(d.Status || '?', statusClass);
+      addTag(d.SizeGB ? d.SizeGB + ' GB' : '?');
+      addTag(d.InterfaceType || '?');
+
+      card.appendChild(details);
+      grid.appendChild(card);
+    }
   },
 
   renderSpace(space) {
     const grid = document.getElementById('space-grid');
+    grid.textContent = '';
     if (space.length === 0) {
-      grid.innerHTML = '<div class="empty-state"><p>Aguardando dados...</p></div>';
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      const p = document.createElement('p');
+      p.textContent = 'Aguardando dados...';
+      empty.appendChild(p);
+      grid.appendChild(empty);
       return;
     }
 
-    grid.innerHTML = space.map((s) => {
+    for (const s of space) {
       const usedGB = (s.SizeGB - s.FreeSpaceGB).toFixed(1);
       const pct = Charts.calcUsage(s.SizeGB, s.FreeSpaceGB);
       const barClass = pct > 90 ? 'danger' : pct > 75 ? 'warn' : '';
 
-      return `
-        <div class="space-item">
-          <div class="space-letter">${s.DeviceID}</div>
-          <div class="space-bar-wrapper">
-            <div class="space-bar-label">
-              <span>${s.VolumeName || ''} — ${pct}% usado</span>
-              <span>${usedGB} / ${s.SizeGB} GB</span>
-            </div>
-            <div class="space-bar">
-              <div class="space-bar-fill ${barClass}" style="width: ${pct}%"></div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
+      const item = document.createElement('div');
+      item.className = 'space-item';
+
+      const letter = document.createElement('div');
+      letter.className = 'space-letter';
+      letter.textContent = s.DeviceID;
+      item.appendChild(letter);
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'space-bar-wrapper';
+
+      const label = document.createElement('div');
+      label.className = 'space-bar-label';
+
+      const labelLeft = document.createElement('span');
+      labelLeft.textContent = (s.VolumeName || '') + ' — ' + pct + '% usado';
+      label.appendChild(labelLeft);
+
+      const labelRight = document.createElement('span');
+      labelRight.textContent = usedGB + ' / ' + s.SizeGB + ' GB';
+      label.appendChild(labelRight);
+
+      wrapper.appendChild(label);
+
+      const bar = document.createElement('div');
+      bar.className = 'space-bar';
+
+      const fill = document.createElement('div');
+      fill.className = 'space-bar-fill' + (barClass ? ' ' + barClass : '');
+      fill.style.width = pct + '%';
+      bar.appendChild(fill);
+
+      wrapper.appendChild(bar);
+      item.appendChild(wrapper);
+      grid.appendChild(item);
+    }
   },
 
   renderStats(data) {
@@ -436,8 +523,14 @@ const App = {
     const grid = document.getElementById('health-grid');
     document.getElementById('health-count').textContent = physicalDisks.length;
 
+    grid.textContent = '';
     if (physicalDisks.length === 0) {
-      grid.innerHTML = '<div class="empty-state"><p>Nenhum disco físico detectado</p></div>';
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      const p = document.createElement('p');
+      p.textContent = 'Nenhum disco físico detectado';
+      empty.appendChild(p);
+      grid.appendChild(empty);
       return;
     }
 
@@ -447,39 +540,63 @@ const App = {
       Unhealthy: { label: 'Crítico', class: 'fail' },
     };
 
-    grid.innerHTML = physicalDisks.map((d) => {
+    for (const d of physicalDisks) {
       const hl = healthLabels[d.HealthStatus] || { label: d.HealthStatus || 'Desconhecido', class: '' };
       const mediaIcon = (d.MediaType || '').toLowerCase().includes('ssd') ? '⚡' : '💿';
       const sizeTb = d.SizeGB ? (d.SizeGB / 1000).toFixed(1) + ' TB' : (d.SizeGB ? d.SizeGB + ' GB' : '—');
 
-      return `
-        <div class="health-card">
-          <div class="health-header">
-            <span class="health-icon">${mediaIcon}</span>
-            <span class="health-name" title="${d.FriendlyName || ''}">${d.FriendlyName || 'Desconhecido'}</span>
-            <span class="health-badge ${hl.class}">${hl.label}</span>
-          </div>
-          <div class="health-details">
-            <div class="health-detail">
-              <span class="health-detail-label">Status</span>
-              <span class="health-detail-value ${hl.class}">${d.OperationalStatus || '—'}</span>
-            </div>
-            <div class="health-detail">
-              <span class="health-detail-label">Tamanho</span>
-              <span class="health-detail-value">${sizeTb}</span>
-            </div>
-            <div class="health-detail">
-              <span class="health-detail-label">Tipo</span>
-              <span class="health-detail-value">${d.MediaType || '—'}</span>
-            </div>
-            <div class="health-detail">
-              <span class="health-detail-label">Conexão</span>
-              <span class="health-detail-value">${d.BusType || '—'}</span>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
+      const card = document.createElement('div');
+      card.className = 'health-card';
+
+      const header = document.createElement('div');
+      header.className = 'health-header';
+
+      const icon = document.createElement('span');
+      icon.className = 'health-icon';
+      icon.textContent = mediaIcon;
+      header.appendChild(icon);
+
+      const name = document.createElement('span');
+      name.className = 'health-name';
+      name.title = d.FriendlyName || '';
+      name.textContent = d.FriendlyName || 'Desconhecido';
+      header.appendChild(name);
+
+      const badge = document.createElement('span');
+      badge.className = 'health-badge ' + hl.class;
+      badge.textContent = hl.label;
+      header.appendChild(badge);
+
+      card.appendChild(header);
+
+      const details = document.createElement('div');
+      details.className = 'health-details';
+
+      function addDetail(label, value, extraClass) {
+        const div = document.createElement('div');
+        div.className = 'health-detail';
+
+        const lbl = document.createElement('span');
+        lbl.className = 'health-detail-label';
+        lbl.textContent = label;
+        div.appendChild(lbl);
+
+        const val = document.createElement('span');
+        val.className = 'health-detail-value' + (extraClass ? ' ' + extraClass : '');
+        val.textContent = value;
+        div.appendChild(val);
+
+        details.appendChild(div);
+      }
+
+      addDetail('Status', d.OperationalStatus || '—', hl.class);
+      addDetail('Tamanho', sizeTb);
+      addDetail('Tipo', d.MediaType || '—');
+      addDetail('Conexão', d.BusType || '—');
+
+      card.appendChild(details);
+      grid.appendChild(card);
+    }
   },
 
   renderAlerts(alerts) {
@@ -497,49 +614,96 @@ const App = {
       ackBtn.style.display = 'none';
     }
 
+    list.textContent = '';
     if (alerts.length === 0) {
-      list.innerHTML = `
-        <div class="empty-state">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          <p>Nenhum alerta registrado</p>
-        </div>`;
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+      const p = document.createElement('p');
+      p.textContent = 'Nenhum alerta registrado';
+      empty.appendChild(p);
+      list.appendChild(empty);
       return;
     }
 
-    list.innerHTML = alerts.map((a) => `
-      <div class="alert-item ${a.severity} ${a.acknowledged ? 'acknowledged' : ''}">
-        <span class="alert-severity ${a.severity}">${a.severity}</span>
-        <div class="alert-content">
-          <div class="alert-message">${a.message}</div>
-          <div class="alert-time">${this.formatTime(a.created_at)}</div>
-        </div>
-        ${!a.acknowledged ? `<div class="alert-actions"><button class="btn-ack" onclick="App.ackAlert(${a.id})">Reconhecer</button></div>` : ''}
-      </div>
-    `).join('');
+    for (const a of alerts) {
+      const item = document.createElement('div');
+      item.className = 'alert-item ' + a.severity + (a.acknowledged ? ' acknowledged' : '');
+
+      const sev = document.createElement('span');
+      sev.className = 'alert-severity ' + a.severity;
+      sev.textContent = a.severity;
+      item.appendChild(sev);
+
+      const content = document.createElement('div');
+      content.className = 'alert-content';
+
+      const msg = document.createElement('div');
+      msg.className = 'alert-message';
+      msg.textContent = a.message;
+      content.appendChild(msg);
+
+      const time = document.createElement('div');
+      time.className = 'alert-time';
+      time.textContent = this.formatTime(a.created_at);
+      content.appendChild(time);
+
+      item.appendChild(content);
+
+      if (!a.acknowledged) {
+        const actions = document.createElement('div');
+        actions.className = 'alert-actions';
+
+        const btn = document.createElement('button');
+        btn.className = 'btn-ack';
+        btn.textContent = 'Reconhecer';
+        btn.addEventListener('click', () => this.ackAlert(a.id));
+        actions.appendChild(btn);
+
+        item.appendChild(actions);
+      }
+
+      list.appendChild(item);
+    }
   },
 
   renderHistory(checks, reset) {
     const tbody = document.getElementById('history-tbody');
-    if (reset) tbody.innerHTML = '';
+    if (reset) tbody.textContent = '';
 
-    const rows = checks.map((c) => {
+    for (const c of checks) {
       const raidVols = (c.volumes || []).filter((v) => v.isRaid);
       const summary = raidVols.length > 0
-        ? raidVols.map((v) => `${v.letter}: ${v.status}`).join(', ')
+        ? raidVols.map((v) => v.letter + ': ' + v.status).join(', ')
         : '—';
 
-      return `
-        <tr>
-          <td>#${c.id}</td>
-          <td><span class="status-pill ${c.overallStatus}">${c.overallStatus}</span></td>
-          <td>${summary}</td>
-          <td>${c.responseTimeMs ? c.responseTimeMs + 'ms' : '—'}</td>
-          <td>${this.formatTime(c.checkedAt)}</td>
-        </tr>
-      `;
-    }).join('');
+      const tr = document.createElement('tr');
 
-    tbody.insertAdjacentHTML('beforeend', rows);
+      const tdId = document.createElement('td');
+      tdId.textContent = '#' + c.id;
+      tr.appendChild(tdId);
+
+      const tdStatus = document.createElement('td');
+      const pill = document.createElement('span');
+      pill.className = 'status-pill ' + c.overallStatus;
+      pill.textContent = c.overallStatus;
+      tdStatus.appendChild(pill);
+      tr.appendChild(tdStatus);
+
+      const tdSummary = document.createElement('td');
+      tdSummary.textContent = summary;
+      tr.appendChild(tdSummary);
+
+      const tdTime = document.createElement('td');
+      tdTime.textContent = c.responseTimeMs ? c.responseTimeMs + 'ms' : '—';
+      tr.appendChild(tdTime);
+
+      const tdDate = document.createElement('td');
+      tdDate.textContent = this.formatTime(c.checkedAt);
+      tr.appendChild(tdDate);
+
+      tbody.appendChild(tr);
+    }
 
     // Update response time in stats from latest
     if (checks.length > 0 && this.historyOffset === 0) {

@@ -21,6 +21,9 @@ const config = {
 
   retentionDays: parseInt(process.env.RETENTION_DAYS || '90', 10),
 
+  authUsername: process.env.AUTH_USERNAME || '',
+  authPassword: process.env.AUTH_PASSWORD || '',
+
   get smtpEnabled() {
     return !!(this.smtp.host && this.smtp.user && this.smtp.pass && this.smtp.to);
   },

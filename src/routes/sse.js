@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { addSSEClient } = require('../monitor/collector');
+const { addSSEClient } = require('../sse');
 
 // GET /api/events - Server-Sent Events endpoint
 router.get('/events', (req, res) => {

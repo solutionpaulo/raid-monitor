@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
 const config = require('../config');
 const queries = require('../database/queries');
-const { broadcastSSE } = require('./collector');
+const { broadcastSSE } = require('../sse');
 const log = require('../logger');
 
 // Cooldown tracking: prevent alert spam (5 min cooldown per status)

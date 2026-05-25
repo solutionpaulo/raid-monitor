@@ -7,18 +7,30 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "install-service": "node scripts/install-service.js install",
-    "uninstall-service": "node scripts/install-service.js uninstall"
+    "uninstall-service": "node scripts/install-service.js uninstall",
+    "test": "jest --forceExit --detectOpenHandles",
+    "test:watch": "jest --watch"
   },
-  "keywords": ["raid", "monitor", "windows-server", "dynamic-disks", "diskpart"],
+  "keywords": [
+    "raid",
+    "monitor",
+    "windows-server",
+    "dynamic-disks",
+    "diskpart"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "sqlite3": "^5.1.7",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^6.9.16",
+    "sqlite3": "^5.1.7"
   },
   "optionalDependencies": {
     "node-windows": "^1.0.0-beta.8"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2"
   }
 }

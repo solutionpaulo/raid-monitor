@@ -8,12 +8,26 @@ const sseRoutes = require('./src/routes/sse');
 const config = require('./src/config');
 const queries = require('./src/database/queries');
 const log = require('./src/logger');
+const { basicAuth } = require('./src/auth');
 
 const app = express();
 let server = null;
 
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'same-origin');
+  if (!config.demoMode) {
+    res.setHeader('Content-Security-Policy', "default-src 'self'; font-src 'self' https://fonts.gstatic.com; style-src 'self' https://fonts.googleapis.com; img-src 'self' data:");
+  }
+  next();
+});
+
 // Middleware
 app.use(express.json());
+app.use(basicAuth);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // API Routes

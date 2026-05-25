@@ -71,8 +71,9 @@ function parseVolumeLine(line, cols) {
   if (line.length < 20) return null;
 
   // Try regex first (more reliable for varied spacing)
+  // Status words are separated by single space; status column is separated from info by 2+ spaces
   const match = line.match(
-    /^\s*Volume\s+(\d+)\s+([A-Za-z ])\s{2,}(.{0,11})\s{2,}(\S*)\s{2,}(\S+(?:\s*\S+)?)\s{2,}(\d+\s*\w+)\s{2,}(\S+(?:\s+\S+)?)\s*(.*)?$/
+    /^\s*Volume\s+(\d+)\s+([A-Za-z ])\s{2,}(.{0,11})\s{2,}(\S*)\s{2,}(\S+(?:\s*\S+)?)\s{2,}(\d+\s*\w+)\s{2,}(\S+(?:\s\S+)?)\s{2,}(.*)?$/
   );
 
   if (match) {

@@ -4,33 +4,11 @@ const { parseDiskpartOutput, determineOverallStatus } = require('./parser');
 const queries = require('../database/queries');
 const config = require('../config');
 const log = require('../logger');
+const { broadcastSSE } = require('../sse');
+const { handleStatusChange } = require('./alerter');
 
-// SSE clients
-let sseClients = [];
 // Last known status for change detection
 let lastOverallStatus = null;
-
-/**
- * Register an SSE client for real-time updates.
- */
-function addSSEClient(res) {
-  sseClients.push(res);
-  res.on('close', () => {
-    sseClients = sseClients.filter((c) => c !== res);
-  });
-}
-
-/**
- * Send an SSE event to all connected clients.
- */
-function broadcastSSE(event, data) {
-  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-  sseClients.forEach((client) => {
-    try {
-      client.write(payload);
-    } catch (_) { /* client disconnected */ }
-  });
-}
 
 /**
  * Identify disks available for RAID repair.
@@ -168,12 +146,11 @@ async function collectData() {
 
   // Check for status changes and trigger alerts
   if (lastOverallStatus !== null && lastOverallStatus !== overallStatus) {
-    const alerter = require('./alerter');
-    await alerter.handleStatusChange(lastOverallStatus, overallStatus, data.volumes);
+    await handleStatusChange(lastOverallStatus, overallStatus, data.volumes);
   }
   lastOverallStatus = overallStatus;
 
   return result;
 }
 
-module.exports = { collectData, addSSEClient, broadcastSSE, generateDemoData };
+module.exports = { collectData, generateDemoData };
