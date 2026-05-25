@@ -143,9 +143,7 @@ const App = {
     try {
       const res = await fetch('/api/settings');
       const data = await res.json();
-      if (data.demoMode) {
-        document.getElementById('demo-badge').style.display = '';
-      }
+      document.getElementById('demo-badge').style.display = data.demoMode ? '' : 'none';
     } catch (err) { console.error('fetchSettings:', err); }
   },
 

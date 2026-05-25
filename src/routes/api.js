@@ -144,6 +144,7 @@ router.get('/stats', async (req, res) => {
 
 // GET /api/settings - Current settings
 router.get('/settings', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.json({
     checkIntervalSeconds: config.checkIntervalSeconds,
     host: config.host,
